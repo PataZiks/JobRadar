@@ -12,13 +12,20 @@ public sealed class JobRunner
     private readonly IJobFilter _filter;
     private readonly IJobScorer _scorer;
     private readonly DuplicateDetector _deduplicator;
+    private readonly JobRunnerOptions _options;
 
-    public JobRunner(IJobSource source, IJobFilter filter, IJobScorer scorer, DuplicateDetector deduplicator)
+    public JobRunner(
+        IJobSource source,
+        IJobFilter filter,
+        IJobScorer scorer,
+        DuplicateDetector deduplicator,
+        JobRunnerOptions options)
     {
         _source = source;
         _filter = filter;
         _scorer = scorer;
         _deduplicator = deduplicator;
+        _options = options;
     }
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
@@ -44,9 +51,16 @@ public sealed class JobRunner
         var unique = _deduplicator.Deduplicate(passed);
         var sorted = unique.OrderByDescending(j => j.Score).ToList();
 
+        if (_options.DryRun)
+        {
+            Console.WriteLine($"[dry-run] Would process {sorted.Count} job(s). No output written.");
+            return;
+        }
+
         // Output
         var line = new string('─', 72);
-        Console.WriteLine($"JobRadar  |  Source: {_source.Name}  |  {all.Count} fetched  →  {sorted.Count} after filter/dedup");
+        var label = _options.ShowAll ? "all" : "new";
+        Console.WriteLine($"JobRadar  |  Source: {_source.Name}  |  {all.Count} fetched  →  {sorted.Count} {label} after filter/dedup");
         Console.WriteLine(new string('═', 72));
 
         foreach (var job in sorted)
