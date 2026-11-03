@@ -1,3 +1,4 @@
+using JobRadar.Cli.Storage;
 using JobRadar.Core.Deduplication;
 using JobRadar.Core.Filtering;
 using JobRadar.Core.Models;
@@ -12,6 +13,7 @@ public sealed class JobRunner
     private readonly IJobFilter _filter;
     private readonly IJobScorer _scorer;
     private readonly DuplicateDetector _deduplicator;
+    private readonly JobRepository _repository;
     private readonly JobRunnerOptions _options;
 
     public JobRunner(
@@ -19,12 +21,14 @@ public sealed class JobRunner
         IJobFilter filter,
         IJobScorer scorer,
         DuplicateDetector deduplicator,
+        JobRepository repository,
         JobRunnerOptions options)
     {
         _source = source;
         _filter = filter;
         _scorer = scorer;
         _deduplicator = deduplicator;
+        _repository = repository;
         _options = options;
     }
 
@@ -47,20 +51,32 @@ public sealed class JobRunner
         foreach (var job in passed)
             _scorer.Score(job);
 
-        // Deduplicate and sort
+        // Deduplicate
         var unique = _deduplicator.Deduplicate(passed);
-        var sorted = unique.OrderByDescending(j => j.Score).ToList();
+
+        // Check DB: keep only new jobs (unless --all)
+        var toShow = _options.ShowAll
+            ? unique
+            : _repository.FilterAndMarkNew(unique);
+
+        var sorted = toShow.OrderByDescending(j => j.Score).ToList();
 
         if (_options.DryRun)
         {
-            Console.WriteLine($"[dry-run] Would process {sorted.Count} job(s). No output written.");
+            Console.WriteLine($"[dry-run] {all.Count} fetched → {sorted.Count} new job(s) would be shown. DB has {_repository.CountSeen()} seen.");
+            return;
+        }
+
+        if (sorted.Count == 0)
+        {
+            Console.WriteLine($"JobRadar  |  {all.Count} fetched, 0 new jobs. DB has {_repository.CountSeen()} seen entries.");
             return;
         }
 
         // Output
         var line = new string('─', 72);
         var label = _options.ShowAll ? "all" : "new";
-        Console.WriteLine($"JobRadar  |  Source: {_source.Name}  |  {all.Count} fetched  →  {sorted.Count} {label} after filter/dedup");
+        Console.WriteLine($"JobRadar  |  Source: {_source.Name}  |  {all.Count} fetched  →  {sorted.Count} {label} job(s)");
         Console.WriteLine(new string('═', 72));
 
         foreach (var job in sorted)

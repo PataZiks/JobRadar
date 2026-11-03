@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using JobRadar.Cli.Storage;
 using DotNetEnv;
 using JobRadar.Cli;
 using JobRadar.Cli.Infrastructure;
@@ -98,10 +99,13 @@ var host = Host.CreateDefaultBuilder(args)
             source = new FakeJobSource(fixturePath);
         }
 
+        var dbPath = Path.Combine(AppContext.BaseDirectory, "data", "jobradar.db");
+
         services.AddSingleton(source);
         services.AddSingleton<IJobFilter>(new JobFilter(filterOptions));
         services.AddSingleton<IJobScorer>(new JobScorer(scoringOptions, salaryTarget));
         services.AddSingleton<DuplicateDetector>();
+        services.AddSingleton(new JobRepository(dbPath));
         services.AddSingleton(new JobRunnerOptions(dryRun, showAll));
         services.AddSingleton<JobRunner>();
     })
