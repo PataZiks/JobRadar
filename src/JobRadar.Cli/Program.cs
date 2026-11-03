@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using JobRadar.Cli.Notifications;
 using JobRadar.Cli.Storage;
 using DotNetEnv;
 using JobRadar.Cli;
@@ -99,15 +100,37 @@ var host = Host.CreateDefaultBuilder(args)
             source = new FakeJobSource(fixturePath);
         }
 
-        var dbPath = Path.Combine(AppContext.BaseDirectory, "data", "jobradar.db");
+        var dbPath     = Path.Combine(AppContext.BaseDirectory, "data", "jobradar.db");
+        var reportDir  = Path.Combine(AppContext.BaseDirectory, "reports");
 
-        services.AddSingleton(source);
-        services.AddSingleton<IJobFilter>(new JobFilter(filterOptions));
-        services.AddSingleton<IJobScorer>(new JobScorer(scoringOptions, salaryTarget));
-        services.AddSingleton<DuplicateDetector>();
-        services.AddSingleton(new JobRepository(dbPath));
-        services.AddSingleton(new JobRunnerOptions(dryRun, showAll));
-        services.AddSingleton<JobRunner>();
+        // Email – only if credentials are present in environment
+        var emailFrom  = Environment.GetEnvironmentVariable("EMAIL_FROM")        ?? string.Empty;
+        var emailTo    = Environment.GetEnvironmentVariable("EMAIL_TO")           ?? string.Empty;
+        var emailPass  = Environment.GetEnvironmentVariable("EMAIL_APP_PASSWORD") ?? string.Empty;
+        var sendOnlyIfNew = cfg.GetValue<bool>("JobRadar:Email:SendOnlyIfNew", true);
+
+        EmailNotifier? emailNotifier = null;
+        if (!string.IsNullOrEmpty(emailFrom) && !string.IsNullOrEmpty(emailTo) && !string.IsNullOrEmpty(emailPass))
+        {
+            emailNotifier = new EmailNotifier(new EmailOptions
+            {
+                From = emailFrom, To = emailTo,
+                AppPassword = emailPass, SendOnlyIfNew = sendOnlyIfNew
+            });
+        }
+
+        var filter     = new JobFilter(filterOptions);
+        var scorer     = new JobScorer(scoringOptions, salaryTarget);
+        var dedup      = new DuplicateDetector();
+        var repository = new JobRepository(dbPath);
+        var runOptions = new JobRunnerOptions(dryRun, showAll);
+
+        services.AddSingleton<IJobSource>(source);
+        services.AddSingleton<IJobFilter>(filter);
+        services.AddSingleton<IJobScorer>(scorer);
+        services.AddSingleton(dedup);
+        services.AddSingleton(repository);
+        services.AddSingleton(new JobRunner(source, filter, scorer, dedup, repository, emailNotifier, reportDir, runOptions));
     })
     .Build();
 

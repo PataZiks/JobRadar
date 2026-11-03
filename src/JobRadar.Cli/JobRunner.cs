@@ -1,3 +1,5 @@
+using JobRadar.Cli.Notifications;
+using JobRadar.Cli.Reporting;
 using JobRadar.Cli.Storage;
 using JobRadar.Core.Deduplication;
 using JobRadar.Core.Filtering;
@@ -14,6 +16,8 @@ public sealed class JobRunner
     private readonly IJobScorer _scorer;
     private readonly DuplicateDetector _deduplicator;
     private readonly JobRepository _repository;
+    private readonly EmailNotifier? _email;
+    private readonly string _reportDir;
     private readonly JobRunnerOptions _options;
 
     public JobRunner(
@@ -22,6 +26,8 @@ public sealed class JobRunner
         IJobScorer scorer,
         DuplicateDetector deduplicator,
         JobRepository repository,
+        EmailNotifier? email,
+        string reportDir,
         JobRunnerOptions options)
     {
         _source = source;
@@ -29,6 +35,8 @@ public sealed class JobRunner
         _scorer = scorer;
         _deduplicator = deduplicator;
         _repository = repository;
+        _email = email;
+        _reportDir = reportDir;
         _options = options;
     }
 
@@ -100,6 +108,27 @@ public sealed class JobRunner
             Console.WriteLine($"  {snippet}");
             Console.WriteLine($"  {job.Link}");
             Console.WriteLine(line);
+        }
+
+        // Write HTML report
+        var html = HtmlReportWriter.Generate(sorted, _source.Name);
+        Directory.CreateDirectory(_reportDir);
+        var reportPath = Path.Combine(_reportDir, $"report_{DateTime.Now:yyyyMMdd_HHmmss}.html");
+        await File.WriteAllTextAsync(reportPath, html, cancellationToken);
+        Console.WriteLine($"\nReport saved: {reportPath}");
+
+        // Send email
+        if (_email is not null)
+        {
+            try
+            {
+                await _email.SendAsync(sorted, html, cancellationToken);
+                Console.WriteLine("Email sent.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Email failed: {ex.Message}");
+            }
         }
     }
 }
