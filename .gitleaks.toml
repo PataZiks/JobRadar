@@ -1,0 +1,11 @@
+[extend]
+# Use the default gitleaks ruleset as baseline
+useDefault = true
+
+[allowlist]
+description = "Safe patterns – known non-secrets"
+regexes = [
+    # .env.example values are intentionally placeholder text
+    '''your-.*-here''',
+    '''your-address@example\.com''',
+]

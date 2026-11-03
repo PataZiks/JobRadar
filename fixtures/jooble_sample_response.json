@@ -1,0 +1,65 @@
+{
+  "totalCount": 5,
+  "jobs": [
+    {
+      "id": "fake-001",
+      "title": "Junior .NET Developer (m/w/d)",
+      "company": "TechCorp GmbH",
+      "location": "Wien, Österreich",
+      "snippet": "Wir suchen einen Junior .NET Developer mit Grundkenntnissen in C# und ASP.NET Core. Berufseinsteiger willkommen. Home-Office 2 Tage/Woche möglich.",
+      "salary": "",
+      "source": "fake",
+      "type": "Vollzeit",
+      "link": "https://example.com/jobs/fake-001",
+      "updated": "2026-01-01T08:00:00"
+    },
+    {
+      "id": "fake-002",
+      "title": "Junior Java Backend Developer – Trainee",
+      "company": "StartupWien GmbH",
+      "location": "Wien, Österreich",
+      "snippet": "Trainee-Position für Java-Entwickler. Spring Boot, SQL, Git. Home-Office möglich. Jahresbrutto: EUR 42.000.",
+      "salary": "42000",
+      "source": "fake",
+      "type": "Vollzeit",
+      "link": "https://example.com/jobs/fake-002",
+      "updated": "2026-01-01T08:00:00"
+    },
+    {
+      "id": "fake-003",
+      "title": "Senior Software Engineer .NET",
+      "company": "BigCorp AG",
+      "location": "Wien, Österreich",
+      "snippet": "Wir suchen einen Senior Software Engineer mit 5+ Jahren Erfahrung in C#/.NET. Deutschkenntnisse Muttersprache erforderlich.",
+      "salary": "80000",
+      "source": "fake",
+      "type": "Vollzeit",
+      "link": "https://example.com/jobs/fake-003",
+      "updated": "2026-01-01T08:00:00"
+    },
+    {
+      "id": "fake-004",
+      "title": "Junior Systemadministrator (m/w/d)",
+      "company": "IT-Solutions Wien",
+      "location": "Wiener Neudorf, Österreich",
+      "snippet": "Einsteigerstelle im Bereich Systemadministration. Linux, Windows Server, Netzwerk. 1–2 Jahre Erfahrung von Vorteil. Gehalt unter Kollektivvertrag.",
+      "salary": "32000",
+      "source": "fake",
+      "type": "Vollzeit",
+      "link": "https://example.com/jobs/fake-004",
+      "updated": "2026-01-01T08:00:00"
+    },
+    {
+      "id": "fake-005",
+      "title": "Praktikant Softwareentwicklung .NET",
+      "company": "Academy Corp",
+      "location": "Wien, Österreich",
+      "snippet": "Praktikumsstelle für Studenten. C#, .NET, SQL. 3 Monate, Teilzeit möglich.",
+      "salary": "",
+      "source": "fake",
+      "type": "Praktikum",
+      "link": "https://example.com/jobs/fake-005",
+      "updated": "2026-01-01T08:00:00"
+    }
+  ]
+}
