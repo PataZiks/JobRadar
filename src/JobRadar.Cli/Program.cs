@@ -1,27 +1,41 @@
-﻿using JobRadar.Cli.Sources;
+﻿using JobRadar.Cli;
+using JobRadar.Cli.Sources;
+using JobRadar.Core.Deduplication;
+using JobRadar.Core.Filtering;
+using JobRadar.Core.Scoring;
+using JobRadar.Core.Sources;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-Console.OutputEncoding = System.Text.Encoding.UTF8;
+var host = Host.CreateDefaultBuilder(args)
+    .UseContentRoot(AppContext.BaseDirectory)
+    .ConfigureAppConfiguration(cfg => cfg
+        .AddJsonFile("appsettings.json", optional: false)
+        .AddEnvironmentVariables())
+    .ConfigureLogging(logging =>
+    {
+        logging.ClearProviders();
+        logging.AddConsole();
+        logging.SetMinimumLevel(LogLevel.Warning);
+    })
+    .ConfigureServices((ctx, services) =>
+    {
+        var cfg = ctx.Configuration;
 
-var fixturePath = Path.Combine(AppContext.BaseDirectory, "fixtures", "jooble_sample_response.json");
-var source = new FakeJobSource(fixturePath);
+        var filterOptions = cfg.GetSection("JobRadar:Filter").Get<FilterOptions>() ?? new FilterOptions();
+        var scoringOptions = cfg.GetSection("JobRadar:Scoring").Get<ScoringOptions>() ?? new ScoringOptions();
+        var salaryTarget = cfg.GetValue<decimal>("JobRadar:Salary:TargetAnnual", 42_000);
 
-var jobs = await source.FetchAsync();
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "fixtures", "jooble_sample_response.json");
 
-Console.WriteLine($"JobRadar  |  Source: {source.Name}  |  {jobs.Count} job(s) found");
-Console.WriteLine(new string('=', 72));
+        services.AddSingleton<IJobSource>(new FakeJobSource(fixturePath));
+        services.AddSingleton<IJobFilter>(new JobFilter(filterOptions));
+        services.AddSingleton<IJobScorer>(new JobScorer(scoringOptions, salaryTarget));
+        services.AddSingleton<DuplicateDetector>();
+        services.AddSingleton<JobRunner>();
+    })
+    .Build();
 
-foreach (var job in jobs)
-{
-    Console.WriteLine($"  {job.Title}");
-    Console.WriteLine($"  {job.Company}  |  {job.Location}  |  {job.Type}");
-
-    if (!string.IsNullOrWhiteSpace(job.Salary))
-        Console.WriteLine($"  Salary: {job.Salary}");
-
-    var snippet = job.Snippet.Length > 100
-        ? job.Snippet[..100] + "..."
-        : job.Snippet;
-    Console.WriteLine($"  {snippet}");
-    Console.WriteLine($"  {job.Link}");
-    Console.WriteLine(new string('-', 72));
-}
+await host.Services.GetRequiredService<JobRunner>().RunAsync();

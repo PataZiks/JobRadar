@@ -14,8 +14,9 @@ public sealed class JobPost
     public string Link { get; init; } = string.Empty;
     public string Updated { get; init; } = string.Empty;
 
-    // Filled by scorer and filter (added in v2)
+    // Filled by filter and scorer
     public int Score { get; set; }
     public string ScoreReason { get; set; } = string.Empty;
+    public string Warning { get; set; } = string.Empty;
     public bool IsNew { get; set; } = true;
 }
